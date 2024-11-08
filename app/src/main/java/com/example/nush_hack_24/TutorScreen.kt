@@ -15,7 +15,7 @@ fun TutorScreen(
     vm: MainViewModel = viewModel()
 ){
     androidx.compose.material3.Text(
-        "Logged in as: ${vm.userEmail} (TUTEE)",
+        "Logged in as: ${vm.userEmail} (TUTOR)",
         style = MaterialTheme.typography.headlineLarge
     )
 
@@ -41,7 +41,7 @@ fun TutorScreen(
     AnimatedVisibility(
         visible = vm.isEditProfile
     ) {
-        EditPage()
+        EditPage(subject = true)
     }
     Spacer(modifier = Modifier.height(16.dp))
 

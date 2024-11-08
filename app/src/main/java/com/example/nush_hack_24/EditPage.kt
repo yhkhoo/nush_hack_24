@@ -73,20 +73,22 @@ fun EditPage(subject: Boolean = false, vm: MainViewModel = viewModel()) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Subjects checkboxes
-        Text("Select subjects")
-        LazyRow(verticalAlignment = Alignment.CenterVertically) {
-            items(vm.subjects) { subject ->
-                Checkbox(
-                    checked = vm.selectedSubjects.contains(subject),
-                    onCheckedChange = { checked ->
-                        if (checked) {
-                            vm.selectedSubjects.add(subject)
-                        } else {
-                            vm.selectedSubjects.remove(subject)
+        if(subject) {
+            Text("Select subjects")
+            LazyRow(verticalAlignment = Alignment.CenterVertically) {
+                items(vm.subjects) { subject ->
+                    Checkbox(
+                        checked = vm.selectedSubjects.contains(subject),
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                vm.selectedSubjects.add(subject)
+                            } else {
+                                vm.selectedSubjects.remove(subject)
+                            }
                         }
-                    }
-                )
-                Text(subject)
+                    )
+                    Text(subject)
+                }
             }
         }
 

@@ -1,6 +1,5 @@
 package com.example.nush_hack_24
 
-import TuteeScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent

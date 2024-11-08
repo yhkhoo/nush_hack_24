@@ -11,7 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class MainViewModel : ViewModel() {
-    val subjects = listOf("English", "Chinese", "Tamil", "Hindi", "Biology", "Chemistry", "Physics", "Math", "Geography", "Literature", "Social Studies", "History")
+    val subjects = listOf<String>("English", "Chinese", "Tamil", "Hindi", "Biology", "Chemistry", "Physics", "Math", "Geography", "Literature", "Social Studies", "History")
 
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
     val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -29,12 +29,14 @@ class MainViewModel : ViewModel() {
     // flags
     var isSignUpPage by mutableStateOf(false) // Flag to toggle between Login and Sign Up page
     var isEditProfile by mutableStateOf(false)
+    var isSearch by mutableStateOf(false)
 
     // Profile details
     var userName by mutableStateOf("")
     var userBio by mutableStateOf("")
     var userAge by mutableStateOf("")
-    var selectedSubjects = mutableListOf<String>() // Subjects the user is enrolled in
+    var selectedSubjects = mutableStateListOf<String>() // Subjects the user is enrolled in
+    var foundTutors = mutableStateListOf<User>()
 
     init {
         if (auth.currentUser != null) {
@@ -114,7 +116,7 @@ class MainViewModel : ViewModel() {
                     userName = document.getString("name") ?: "Unknown"
                     userBio = document.getString("bio") ?: "No bio"
                     userAge = document.getString("age") ?: ""
-                    selectedSubjects = (document.get("subjects") as? List<String>)?.toMutableList() ?: mutableListOf()
+                    selectedSubjects = (document.get("subjects") as? SnapshotStateList<String>) ?: mutableStateListOf<String>()
                 }
                 .addOnFailureListener {
                     statusMessage = "Error fetching profile"
@@ -140,7 +142,6 @@ class MainViewModel : ViewModel() {
                     userName = name
                     userBio = bio
                     userAge = age
-                    selectedSubjects = subjects.toMutableList()
                     callback(true)
                 }
                 .addOnFailureListener {
@@ -175,8 +176,14 @@ class MainViewModel : ViewModel() {
                             if (document.exists()) {
                                 // Access multiple fields
                                 val email = document.getString("email") ?: "Unknown"
+                                val age = document.getString("age") ?: "0"
+                                val name = document.getString("name") ?: "Unknown"
+                                val role = document.getString("role") ?: "Unknown"
+                                val bio = document.getString("bio") ?: "Unknown"
+                                val subjects = (document.get("subjects") as? List<String>) ?: listOf()
+                                Log.wtf("jover", subjects.toString())
 
-                                val user2  = User(uid = user.id, email = email)
+                                val user2  = User(uid = user.id, email = email, age=age, name=name, role=role, bio=bio, subjects=subjects)
                                 onUserFetched(user2)
                             } else {
                                 Log.w("fetchUserDetails", "No such document")
@@ -192,5 +199,15 @@ class MainViewModel : ViewModel() {
 
     fun onUserFetched(user2: User){
         userList.add(user2)
+    }
+
+    fun searchTutors(subject: String){
+        foundTutors.clear()
+        fetchUserList(auth.currentUser!!.uid)
+        userList.forEach { user ->
+            if(user.role == "Tutor" && subject in user.subjects){
+                foundTutors.add(user)
+            }
+        }
     }
 }
