@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "478961544983",
+    "project_id": "nushhack-d9d36",
+    "storage_bucket": "nushhack-d9d36.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:478961544983:android:6e37282df0119aff9b5152",
+        "android_client_info": {
+          "package_name": "com.example.nush_hack_24"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCEydFbL7U2F9QikaHmtUAxqEC0TW6qyE4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
