@@ -1,6 +1,7 @@
 package com.example.nush_hack_24
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -12,7 +13,7 @@ class MainViewModel() : ViewModel() {
     val db: FirebaseFirestore = FirebaseFirestore.getInstance()
     var email by mutableStateOf("")
     var password by mutableStateOf("")
-    var data by mutableStateOf("")
+    var birthyear by mutableStateOf("")
     var selectedRole by mutableStateOf("Tutor") // Default role
     var isUserLoggedIn by mutableStateOf(false)
     var statusMessage by mutableStateOf("")
@@ -38,7 +39,8 @@ class MainViewModel() : ViewModel() {
             }
     }
 
-    fun registerUser(email: String, password: String, role: String, callback: (Boolean) -> Unit) {
+    fun registerUser(email: String, password: String, role: String, birth: String, callback: (Boolean) -> Unit) {
+        val birthyear = birth.toString()
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -47,7 +49,8 @@ class MainViewModel() : ViewModel() {
 
                     val userData = hashMapOf(
                         "email" to email,
-                        "role" to role // Save the role as part of the user's data
+                        "role" to role, // Save the role as part of the user's data
+                        "birthyear" to birthyear,
                     )
 
                     db.collection("users").document(userId)

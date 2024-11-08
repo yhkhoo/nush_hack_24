@@ -6,13 +6,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material.Button
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.RadioButton
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -23,18 +24,26 @@ fun LoginPage(vm: MainViewModel = viewModel()){
         // Show Sign-Up page
         Text("Sign Up")
 
-        OutlinedTextField(
+        TextField(
             value = vm.email,
             onValueChange = { vm.email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
         )
-        OutlinedTextField(
+        TextField(
             value = vm.password,
             onValueChange = { vm.password = it },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation()
         )
+        TextField(
+            value = vm.birthyear,
+            onValueChange = { vm.birthyear = it },
+            label = { Text("Year of birth") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+
 
         // Role selection for Tutor or Tutee
         Text("Select Role:")
@@ -57,7 +66,7 @@ fun LoginPage(vm: MainViewModel = viewModel()){
         }
 
         Button(
-            onClick = { vm.registerUser(vm.email, vm.password, vm.selectedRole) { success ->
+            onClick = { vm.registerUser(vm.email, vm.password, vm.selectedRole, vm.birthyear) { success ->
                 if (success) {
                     vm.isUserLoggedIn = true
                     // Fetch the user's email and role from Firestore after login
@@ -83,17 +92,18 @@ fun LoginPage(vm: MainViewModel = viewModel()){
         // Show Login page
         Text("Login")
 
-        OutlinedTextField(
+        TextField(
             value = vm.email,
             onValueChange = { vm.email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth()
         )
-        OutlinedTextField(
+        TextField(
             value = vm.password,
             onValueChange = { vm.password = it },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation(),
         )
 
         Button(
