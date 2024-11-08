@@ -73,7 +73,7 @@ dependencies {
     implementation("androidx.compose.ui:ui:1.4.0") // Use the latest stable version
     implementation("androidx.compose.material:material:1.4.0") // Material Design components
     implementation("androidx.compose.ui:ui-tooling-preview:1.4.0") // Preview support
-
+    implementation("androidx.navigation:navigation-compose:2.5.3")
     // Optional - Material Design Icons
     implementation("androidx.compose.material:material-icons-core:1.4.0")
     implementation("androidx.compose.material:material-icons-extended:1.4.0")
