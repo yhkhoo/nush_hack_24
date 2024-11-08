@@ -40,7 +40,7 @@ fun LoginPage(vm: MainViewModel = viewModel()){
         TextField(
             value = vm.birthyear,
             onValueChange = { vm.birthyear = it },
-            label = { Text("Year of birth") },
+            label = { Text("Age") },
             modifier = Modifier.fillMaxWidth(),
         )
 
