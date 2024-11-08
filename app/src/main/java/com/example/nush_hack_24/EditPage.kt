@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun EditPage(vm: MainViewModel = viewModel()) {
+fun EditPage(subject: Boolean = false, vm: MainViewModel = viewModel()) {
     var nameState by remember { mutableStateOf(TextFieldValue(vm.userName)) }
     var bioState by remember { mutableStateOf(TextFieldValue(vm.userBio)) }
     var ageState by remember { mutableStateOf(TextFieldValue(vm.userAge.toString())) }
@@ -98,7 +98,7 @@ fun EditPage(vm: MainViewModel = viewModel()) {
                 vm.updateProfile(
                     nameState.text,
                     bioState.text,
-                    ageState.text.toIntOrNull() ?: 0,
+                    (ageState.text.toIntOrNull() ?: 0).toString(),
                     vm.selectedSubjects
                 ) { success ->
                     if (success) {

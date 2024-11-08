@@ -1,8 +1,11 @@
 package com.example.nush_hack_24
 
+import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -30,7 +33,7 @@ class MainViewModel : ViewModel() {
     // Profile details
     var userName by mutableStateOf("")
     var userBio by mutableStateOf("")
-    var userAge by mutableStateOf(0)
+    var userAge by mutableStateOf("")
     var selectedSubjects = mutableListOf<String>() // Subjects the user is enrolled in
 
     init {
@@ -110,7 +113,7 @@ class MainViewModel : ViewModel() {
                 .addOnSuccessListener { document ->
                     userName = document.getString("name") ?: "Unknown"
                     userBio = document.getString("bio") ?: "No bio"
-                    userAge = document.getString("age")?.toInt() ?: 0
+                    userAge = document.getString("age") ?: ""
                     selectedSubjects = (document.get("subjects") as? List<String>)?.toMutableList() ?: mutableListOf()
                 }
                 .addOnFailureListener {
@@ -120,7 +123,7 @@ class MainViewModel : ViewModel() {
     }
 
     // Update the profile in Firestore
-    fun updateProfile(name: String, bio: String, age: Int, subjects: List<String>, callback: (Boolean) -> Unit) {
+    fun updateProfile(name: String, bio: String, age: String, subjects: List<String>, callback: (Boolean) -> Unit) {
         val user = auth.currentUser
         if (user != null) {
             val userId = user.uid
@@ -150,5 +153,44 @@ class MainViewModel : ViewModel() {
     fun logoutUser(callback: () -> Unit) {
         auth.signOut()
         callback() // Reset state for logout
+    }
+    val userList: SnapshotStateList<User> = mutableStateListOf()
+
+    // Function to fetch all users from Firestore and populate the userList
+    fun fetchUserList(currentUserId: String) {
+        //Log.w("A","A")
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { result ->
+                userList.clear()
+                for (user in result){
+                    Log.d("UserList", "User: ${user.id}")
+
+
+
+                    db.collection("users")
+                        .document(user.id)
+                        .get()
+                        .addOnSuccessListener { document ->
+                            if (document.exists()) {
+                                // Access multiple fields
+                                val email = document.getString("email") ?: "Unknown"
+
+                                val user2  = User(uid = user.id, email = email)
+                                onUserFetched(user2)
+                            } else {
+                                Log.w("fetchUserDetails", "No such document")
+                            }
+                        }
+
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e("MainViewModel", "Error fetching users: ", exception)
+            }
+    }
+
+    fun onUserFetched(user2: User){
+        userList.add(user2)
     }
 }
