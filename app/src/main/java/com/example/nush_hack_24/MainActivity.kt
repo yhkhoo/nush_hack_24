@@ -3,6 +3,7 @@ package com.example.nush_hack_24
 import YourAppTheme
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -58,12 +59,15 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (vm.isUserLoggedIn) {
+                val user = vm.auth.currentUser
+                if (user != null) vm.userUid = user.uid
                 when(vm.userRole){
                     "Tutee" -> YourAppTheme { TuteeScreen() }
                     "Tutor" -> TutorScreen()
                     else -> AdminScreen()
                 }
             } else {
+                Log.d("die","Not")
                 LoginPage()
             }
         }

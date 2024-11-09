@@ -33,31 +33,35 @@ fun TutorPage(
     vm: MainViewModel = viewModel()
 ) {
 
-    var name = ""
-    var age = ""
-    var bio = ""
-    var subject = ""
+    // State variables to hold the data
+    var name by remember { mutableStateOf("") }
+    var age by remember { mutableStateOf("") }
+    var bio by remember { mutableStateOf("") }
+    var subject by remember { mutableStateOf("") }
 
-    Log.d("kkk",receiverId)
+    Log.d("kkk", receiverId)
     vm.db.collection("users").document(receiverId).get()
         .addOnSuccessListener { document ->
             name = document.get("name").toString()
             age = document.get("age").toString()
             bio = document.get("bio").toString()
-            val subjects = document.get("subjects") as? List<*> // Cast to List<String> if possible
+
+            val subjects = document.get("subjects") as? List<*>
             subject = subjects?.joinToString(", ") ?: "No subjects available"
-            Log.d("kk",subject)
+
+            Log.d("kk", subject)
         }
         .addOnFailureListener { exception ->
             Log.w("DocumentFields", "Error getting document: ", exception)
         }
 
-    // Display Profile Data
+// Display Profile Data
     Spacer(modifier = Modifier.height(16.dp))
-    Text("Name: ${name}")
-    Text("Age: ${age}")
-    Text("Bio: ${bio}")
-    Text("Subjects: ${subject}")
+    Text("Name: $name")
+    Text("Age: $age")
+    Text("Bio: $bio")
+    Text("Subjects: $subject")
+
 
     Spacer(modifier = Modifier.height(24.dp))
 
@@ -65,14 +69,6 @@ fun TutorPage(
     LeaveReviewButton(tutorId = receiverId)
 
     Spacer(modifier = Modifier.height(16.dp))
-
-    // Logout Button (You can replace the action with a real logout function if needed)
-    Button(
-        onClick = { /* Handle logout or other actions */ },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text("Logout")
-    }
 }
 
 @Composable
@@ -171,6 +167,34 @@ fun saveReviewToFirebase(tutorId: String, rating: Int, reviewText: String) {
         .add(reviewData)
         .addOnSuccessListener {
             Log.d("Review", "Review saved successfully!")
+            // Fetch the current totalRating and totalReviews
+            db.collection("users").document(tutorId).get()
+                .addOnSuccessListener { document ->
+                    val currentTotalRating = document.getLong("rating") ?: 0L
+                    val currentTotalReviews = document.getLong("reviews") ?: 0L
+
+                    // Calculate new totals
+                    val newTotalRating = currentTotalRating + rating
+                    val newTotalReviews = currentTotalReviews + 1
+
+                    // Update the user document with new totals
+                    db.collection("users").document(tutorId)
+                        .update(
+                            mapOf(
+                                "rating" to newTotalRating,
+                                "reviews" to newTotalReviews
+                            )
+                        )
+                        .addOnSuccessListener {
+                            Log.d("Review", "User totals updated successfully!")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.w("Review", "Error updating user totals", e)
+                        }
+                }
+                .addOnFailureListener { e ->
+                    Log.w("Review", "Error fetching user totals", e)
+                }
         }
         .addOnFailureListener { e ->
             Log.w("Review", "Error saving review", e)

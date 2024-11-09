@@ -81,7 +81,7 @@ fun EditPage(subject: Boolean = false, vm: MainViewModel = viewModel()) {
                         checked = vm.selectedSubjects.contains(subject),
                         onCheckedChange = { checked ->
                             if (checked) {
-                                vm.selectedSubjects.add(subject)
+                                if (!vm.selectedSubjects.contains(subject)) vm.selectedSubjects.add(subject)
                             } else {
                                 vm.selectedSubjects.remove(subject)
                             }

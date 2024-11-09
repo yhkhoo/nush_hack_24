@@ -25,6 +25,7 @@ class MainViewModel : ViewModel() {
     var statusMessage by mutableStateOf("")
     var userRole by mutableStateOf("") // Store user role (Tutor or Tutee)
     var userEmail by mutableStateOf("") // Store user email
+    var userUid by mutableStateOf("") // New UID variable
 
     // flags
     var isSignUpPage by mutableStateOf(false) // Flag to toggle between Login and Sign Up page
@@ -54,6 +55,8 @@ class MainViewModel : ViewModel() {
     fun loginUser(email: String, password: String, callback: (Boolean) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                val user = FirebaseAuth.getInstance().currentUser
+                userUid = user?.uid ?: "" // Set UID
                 callback(task.isSuccessful)
             }
     }

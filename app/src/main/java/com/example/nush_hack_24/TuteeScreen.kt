@@ -1,5 +1,6 @@
 package com.example.nush_hack_24
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
@@ -90,13 +91,31 @@ fun AboutScreen(vm: MainViewModel) {
             style = MaterialTheme.typography.headlineLarge
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // State variables to hold the data
+        var name by remember { mutableStateOf("") }
+        var age by remember { mutableStateOf("") }
+        var bio by remember { mutableStateOf("") }
 
-        // Display Profile Data
-        Text("Name: ${vm.userName}")
-        Text("Age: ${vm.userAge}")
-        Text("Bio: ${vm.userBio}")
-        Text("Subjects: ${vm.selectedSubjects.joinToString(", ")}")
+        Log.d("die",vm.userUid)
+
+        vm.db.collection("users").document(vm.userUid).get()
+            .addOnSuccessListener { document ->
+                name = document.get("name").toString()
+                age = document.get("age").toString()
+                bio = document.get("bio").toString()
+                vm.userName = name
+                vm.userAge = age
+                vm.userBio = bio
+            }
+            .addOnFailureListener { exception ->
+                Log.w("DocumentFields", "Error getting document: ", exception)
+            }
+
+// Display Profile Data
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Name: $name")
+        Text("Age: $age")
+        Text("Bio: $bio")
 
         Spacer(modifier = Modifier.height(24.dp))
         AnimatedVisibility(
