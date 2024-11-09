@@ -30,7 +30,6 @@ fun ChatChoose(
     vm: MainViewModel = viewModel()
 ) {
     val currentUserId = getCurrentUserId() ?: return
-    Log.d("kys", currentUserId)
 
     // State to hold the list of connected users
     var connectedUsers by remember { mutableStateOf<List<User>>(emptyList()) }
@@ -84,7 +83,6 @@ fun ChatChoose(
                             text = { Text(user.name) },
                             modifier = Modifier.clickable {
                                 // Directly set selectedChatId to open ChatScreen
-                                Log.d("kys", user.uid)
                                 selectedChatInfo = ChatRepository.getOrCreateChatId(
                                     currentUserId,
                                     user.uid

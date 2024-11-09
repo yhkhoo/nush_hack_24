@@ -107,8 +107,6 @@ fun EditPage(subject: Boolean = false, vm: MainViewModel = viewModel()) {
                         // Handle success
                         vm.isEditProfile = false
                     } else {
-                        // Handle failure
-                        Log.wtf("EditPage", "fuck")
                     }
                 }
             },

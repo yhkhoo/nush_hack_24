@@ -130,8 +130,6 @@ fun AboutScreen(vm: MainViewModel) {
         var age by remember { mutableStateOf("") }
         var bio by remember { mutableStateOf("") }
 
-        Log.d("die", vm.userUid)
-
         vm.db.collection("users").document(vm.userUid).get()
             .addOnSuccessListener { document ->
                 name = document.get("name").toString()
