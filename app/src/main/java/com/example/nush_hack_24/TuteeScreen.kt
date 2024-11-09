@@ -1,9 +1,12 @@
 package com.example.nush_hack_24
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,28 +17,43 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Divider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TuteeScreen(
     vm: MainViewModel = viewModel()
@@ -48,6 +66,19 @@ fun TuteeScreen(
     val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // TopAppBar with a logout icon at the left
+        TopAppBar(
+            title = { Text("Tutee Profile") },
+            navigationIcon = {
+                IconButton(onClick = { vm.logoutUser { vm.isUserLoggedIn = false } }) {
+                    Icon(
+                        imageVector = Icons.Filled.ExitToApp,
+                        contentDescription = "Logout"
+                    )
+                }
+            }
+        )
+
         // TabRow for tab navigation
         TabRow(selectedTabIndex = pagerState.currentPage) {
             titles.forEachIndexed { index, title ->
@@ -83,12 +114,13 @@ fun AboutScreen(vm: MainViewModel) {
         modifier = Modifier
             .fillMaxHeight()
             .padding(16.dp)
-            .verticalScroll(scrollState),
-
-        ) {
+            .verticalScroll(scrollState)
+    ) {
         Text(
-            "Logged in as: ${vm.userEmail} (TUTEE)",
-            style = MaterialTheme.typography.headlineLarge
+            vm.userName,
+            style = MaterialTheme.typography.headlineLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
 
         // State variables to hold the data
@@ -96,7 +128,7 @@ fun AboutScreen(vm: MainViewModel) {
         var age by remember { mutableStateOf("") }
         var bio by remember { mutableStateOf("") }
 
-        Log.d("die",vm.userUid)
+        Log.d("die", vm.userUid)
 
         vm.db.collection("users").document(vm.userUid).get()
             .addOnSuccessListener { document ->
@@ -111,9 +143,8 @@ fun AboutScreen(vm: MainViewModel) {
                 Log.w("DocumentFields", "Error getting document: ", exception)
             }
 
-// Display Profile Data
+        // Display Profile Data
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Name: $name")
         Text("Age: $age")
         Text("Bio: $bio")
 
@@ -134,16 +165,7 @@ fun AboutScreen(vm: MainViewModel) {
             EditPage()
         }
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Logout Button
-        Button(
-            onClick = { vm.logoutUser { vm.isUserLoggedIn = false } },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Logout")
-        }
-
-        Column() {
+        Column {
             // State for selected option
             var selectedOption by remember { mutableStateOf("English") }
 
@@ -157,20 +179,32 @@ fun AboutScreen(vm: MainViewModel) {
             }
 
             Column(modifier = Modifier.padding(16.dp)) {
-                // TextField to display selected option and open dropdown
-                TextField(
-                    value = selectedOption,
-                    onValueChange = { selectedOption = it },
-                    label = { Text("Select Option") },
-                    readOnly = true,  // Make the TextField read-only, so user can only select from dropdown
-                    modifier = Modifier
-                        .padding(bottom = 8.dp)
-                )
+                // Row with TextField and dropdown icon inside
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    // TextField to display selected option and open dropdown
+                    TextField(
+                        value = selectedOption,
+                        onValueChange = { selectedOption = it },
+                        label = { Text("Select Option") },
+                        readOnly = true,  // Make the TextField read-only
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(bottom = 8.dp),
+                    )
+
+                    // Dropdown toggle button (icon) placed inside the Row
+                    IconButton(
+                        onClick = { expanded = !expanded },
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text("▼") // Use an arrow icon or a custom one
+                    }
+                }
 
                 // Dropdown menu
                 DropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false },
+                    onDismissRequest = { expanded = false }
                 ) {
                     vm.subjects.forEach { option ->
                         DropdownMenuItem(
@@ -178,18 +212,12 @@ fun AboutScreen(vm: MainViewModel) {
                             modifier = Modifier,
                             text = {
                                 Text(text = option)
-                            })
+                            }
+                        )
                     }
                 }
-
-                // Toggle the dropdown when the TextField is clicked
-                Button(
-                    onClick = { expanded = !expanded },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Toggle Dropdown")
-                }
             }
+
             Button(
                 onClick = {
                     vm.searchTutors(selectedOption)
@@ -197,23 +225,205 @@ fun AboutScreen(vm: MainViewModel) {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Search")
+                Text("Search for Tutors")
             }
         }
-        Column() {
+
+        var showDialog by remember { mutableStateOf(false) }
+        var selectedUser by remember { mutableStateOf<User?>(null) }
+
+        Column {
             vm.foundTutors.forEach { user ->
                 Card(
-                    modifier = Modifier.padding(4.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .fillMaxWidth()
+                        .clickable {
+                            selectedUser = user
+                            showDialog = true
+                        }
                 ) {
-                    Column(modifier = Modifier.padding(4.dp)){
+                    Column(modifier = Modifier.padding(4.dp)) {
                         Text(user.name, style = MaterialTheme.typography.titleMedium)
-                        Text("Bio: ${user.bio}")
-                        Text("Age: ${user.age}")
-                        Text("Email: ${user.email}")
+                        Text("Rating: ${user.rating}")
                     }
                 }
             }
         }
+
+        if (showDialog && selectedUser != null) {
+            TutorDialog(
+                user = selectedUser!!,
+                onDismissRequest = { showDialog = false },
+                onHireClick = { /* Handle hire action here */ }
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@SuppressLint("UnrememberedMutableState")
+@Composable
+fun TutorDialog(user: User, onDismissRequest: () -> Unit, onHireClick: () -> Unit) {
+    var selectedTab by remember { mutableStateOf(0) }
+    val tabTitles = listOf("Details", "Reviews")
+    var isPending by remember { mutableStateOf(false) }
+
+    // Call checkPending when the dialog opens
+    LaunchedEffect(user.uid) {
+        checkPending(user) { pending ->
+            isPending = pending
+        }
+    }
+
+    val reviews = mutableStateListOf<Review>() // List of reviews for the selected user
+
+    val db = FirebaseFirestore.getInstance()
+    db.collection("users").document(user.uid).collection("reviews")
+        .get()
+        .addOnSuccessListener { documents ->
+            reviews.clear() // Clear any existing reviews
+            for (document in documents) {
+                val rating = document.getLong("rating")?.toInt() ?: 0
+                val reviewText = document.getString("reviewText") ?: ""
+                val review = Review(rating, reviewText)
+                reviews.add(review)
+            }
+        }
+        .addOnFailureListener { e ->
+            Log.w("Review", "Error fetching reviews", e)
+        }
+
+    Dialog(onDismissRequest = onDismissRequest) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Tab Row
+                TabRow(selectedTabIndex = selectedTab) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                checkPending(user) { isPending ->
+                    if (isPending) {
+                        // Handle the case where the current user is in the pending list
+                        Log.d("checkPending", "User is pending")
+                    } else {
+                        // Handle the case where the current user is not in the pending list
+                        Log.d("checkPending", "User is not pending")
+                    }
+                }
+
+
+                // Tab Content
+                when (selectedTab) {
+                    0 -> { // Details Tab
+                        Column {
+                            Text("Name: ${user.name}")
+                            Text("Bio: ${user.bio}")
+                            Text("Subjects: ${user.subjects.joinToString(", ")}")
+                            Spacer(modifier = Modifier.height(24.dp))
+                            if (isPending) {
+                                Button(
+                                    onClick = {onDismissRequest()},
+                                    enabled = false,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Pending Request")
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        hireTutor(
+                                            tutorId = user.uid,
+                                            onSuccess = {
+                                                isPending = true // Update pending status
+                                                onDismissRequest()
+                                            },
+                                            onFailure = {
+                                                // Handle failure if necessary
+                                            }
+                                        )
+                                    },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Hire")
+                                }
+                            }
+
+                        }
+                    }
+                    1 -> { // Reviews Tab
+                        Column {
+                            reviews.forEach { review ->
+                                Text("Rating: ${review.rating}")
+                                Text("Comment: ${review.reviewText}")
+                                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun checkPending(user: User, onResult: (Boolean) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    db.collection("users")
+        .document(user.uid)
+        .get()
+        .addOnSuccessListener { document ->
+            if (document.exists()) {
+                // Access multiple fields
+                val pending = (document.get("pending") as? List<String>) ?: listOf()
+                onResult(currentUserId in pending)
+            } else {
+                Log.w("checkPending", "No such document")
+                onResult(false) // Return false if no document exists
+            }
+        }
+        .addOnFailureListener { exception ->
+            Log.w("checkPending", "Error fetching document", exception)
+            onResult(false) // Return false if there was an error
+        }
+}
+
+
+// Function to handle the "Hire" action
+fun hireTutor(tutorId: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+
+    val db = FirebaseFirestore.getInstance()
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    currentUserId?.let { userId ->
+        val userDocRef = db.collection("users").document(userId)
+        val tutorDocRef = db.collection("users").document(tutorId)
+
+        db.runBatch { batch ->
+            // Add tutorId to the user's "pending" list
+            batch.update(userDocRef, "pending", FieldValue.arrayUnion(tutorId))
+
+            // Add userId to the tutor's "pending" list
+            batch.update(tutorDocRef, "pending", FieldValue.arrayUnion(userId))
+        }.addOnSuccessListener {
+            onSuccess()
+        }.addOnFailureListener { exception ->
+            onFailure(exception)
+        }
     }
 }

@@ -31,31 +31,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 
 @Composable
 fun ChatScreen(chatId: String, senderId: String, receiverId: String, onBack: () -> Unit) {
     val db = FirebaseFirestore.getInstance()
 
-    var showTutorPage by remember { mutableStateOf(false)}
+    // Variable to hold the receiver's name
+    var receiverName by remember { mutableStateOf("Loading...") }
 
-    // Get the reference to the "users" collection and order by "timestamp" field
-    db.collection("chats").document(chatId).collection("messages")
-        .orderBy("timestamp", Query.Direction.ASCENDING) // or Query.Direction.DESCENDING
-        .get()
-        .addOnSuccessListener { result ->
-            for (document in result) {
-                // Access each document
-                val user = document.toObject(User::class.java)
-                Log.d("UserList", "User: ${user.toString()}")
+    // Fetch the receiver's name from Firestore
+    LaunchedEffect(receiverId) {
+        db.collection("users").document(receiverId).get()
+            .addOnSuccessListener { document ->
+                // Get the "name" field from the document
+                receiverName = document.getString("name") ?: "Unknown User"
             }
-        }
-        .addOnFailureListener { exception ->
-            Log.w("Error", "Error getting documents: ", exception)
-        }
+            .addOnFailureListener { exception ->
+                Log.w("ChatScreen", "Error fetching user data: ", exception)
+                receiverName = "Error Loading Name"
+            }
+    }
 
+    // State for showing the tutor page or chat screen
+    var showTutorPage by remember { mutableStateOf(false) }
+
+    // List of messages from the chat
     val messages = remember { mutableStateListOf<Message>() }
 
+    // Listen for incoming messages in the chat
     LaunchedEffect(chatId) {
         ChatRepository.listenForMessages(chatId) { newMessage ->
             messages.add(newMessage)
@@ -64,14 +67,13 @@ fun ChatScreen(chatId: String, senderId: String, receiverId: String, onBack: () 
 
     var text by remember { mutableStateOf("") }
 
-
-
     if (showTutorPage) {
         // Show TutorPage when the state is true
         TutorPage(receiverId = receiverId)
     } else {
         // Show ChatScreen when the state is false
         Column {
+            // Chat header with back button and the receiver's name
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -83,44 +85,44 @@ fun ChatScreen(chatId: String, senderId: String, receiverId: String, onBack: () 
                 }
 
                 Text(
-                    text = "Chat with $receiverId",
+                    text = "Chat with $receiverName", // Display receiver's name here
                     style = MaterialTheme.typography.h6,
                     modifier = Modifier
-                        .padding(start = 16.dp)
                         .clickable {
                             // Trigger the state change to show TutorPage when clicked
                             showTutorPage = true
                         }
                 )
             }
-        }
 
-        LazyColumn() {
-            items(messages) { message ->
-                MessageBubble(message, isSender = message.senderId == senderId)
-            }
-        }
-
-        Row(modifier = Modifier.padding(8.dp)) {
-            TextField(
-                value = text,
-                onValueChange = { text = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Type a message...") }
-            )
-            IconButton(onClick = {
-                val time = System.currentTimeMillis()
-                if (text.isNotBlank()) {
-                    ChatRepository.sendMessage(chatId, senderId, text, time)
-                    text = ""
+            // Messages list
+            LazyColumn() {
+                items(messages) { message ->
+                    MessageBubble(message, isSender = message.senderId == senderId)
                 }
-            }) {
-                Icon(Icons.Default.Send, contentDescription = "Send")
+            }
+
+            // Message input field and send button
+            Row(modifier = Modifier.padding(8.dp)) {
+                TextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Type a message...") }
+                )
+                IconButton(onClick = {
+                    val time = System.currentTimeMillis()
+                    if (text.isNotBlank()) {
+                        ChatRepository.sendMessage(chatId, senderId, text, time)
+                        text = ""
+                    }
+                }) {
+                    Icon(Icons.Default.Send, contentDescription = "Send")
+                }
             }
         }
     }
 }
-
 
 @Composable
 fun MessageBubble(message: Message, isSender: Boolean) {

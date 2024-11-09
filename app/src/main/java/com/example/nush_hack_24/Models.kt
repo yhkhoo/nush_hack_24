@@ -7,7 +7,10 @@ data class User(
     val age: String = "",
     val bio: String = "",
     val role: String = "",
-    val subjects: List<String> = listOf()
+    val subjects: List<String> = listOf(),
+    val rating: String = "",
+    val pending: List<String> = listOf(),
+    val connect: List<String> = listOf()
 )
 
 data class Message(
@@ -16,3 +19,5 @@ data class Message(
     val message: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )
+
+data class Review(val rating: Int, val reviewText: String)

@@ -1,13 +1,10 @@
 package com.example.nush_hack_24
 
 import YourAppTheme
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,14 +23,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                Color.TRANSPARENT, Color.TRANSPARENT
-            ),
-            navigationBarStyle = SystemBarStyle.light(
-                Color.TRANSPARENT, Color.TRANSPARENT
-            )
-        )
         super.onCreate(savedInstanceState)
         actionBar?.hide()
         setContent {
@@ -44,8 +33,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-
     @Composable
     fun MyApp() {
         val vm: MainViewModel = viewModel(this)

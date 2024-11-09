@@ -9,6 +9,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlin.math.round
 
 class MainViewModel : ViewModel() {
     val subjects = listOf<String>("English", "Chinese", "Tamil", "Hindi", "Biology", "Chemistry", "Physics", "Math", "Geography", "Literature", "Social Studies", "History")
@@ -26,6 +27,7 @@ class MainViewModel : ViewModel() {
     var userRole by mutableStateOf("") // Store user role (Tutor or Tutee)
     var userEmail by mutableStateOf("") // Store user email
     var userUid by mutableStateOf("") // New UID variable
+    var userRating by mutableStateOf("")
 
     // flags
     var isSignUpPage by mutableStateOf(false) // Flag to toggle between Login and Sign Up page
@@ -62,7 +64,7 @@ class MainViewModel : ViewModel() {
     }
 
     // Function to register the user
-    fun registerUser(email: String, password: String, role: String, birth: String, callback: (Boolean) -> Unit) {
+    fun registerUser(email: String, password: String, role: String, birth: String, userName: String, callback: (Boolean) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
@@ -73,6 +75,7 @@ class MainViewModel : ViewModel() {
                         "email" to email,
                         "role" to role, // Save the role as part of the user's data
                         "age" to birth,
+                        "name" to userName
                     )
 
                     db.collection("users").document(userId)
@@ -184,9 +187,14 @@ class MainViewModel : ViewModel() {
                                 val role = document.getString("role") ?: "Unknown"
                                 val bio = document.getString("bio") ?: "Unknown"
                                 val subjects = (document.get("subjects") as? List<String>) ?: listOf()
+                                val pending = (document.get("pending") as? List<String>) ?: listOf()
+                                val connect = (document.get("connect") as? List<String>) ?: listOf()
+                                val num = document.get("rating")?.toString() ?: "0"
+                                val num2 = document.get("reviews")?.toString() ?: "0"
+                                val rev = getRating(num, num2)
                                 Log.wtf("jover", subjects.toString())
 
-                                val user2  = User(uid = user.id, email = email, age=age, name=name, role=role, bio=bio, subjects=subjects)
+                                val user2  = User(uid = user.id, email = email, age=age, name=name, role=role, bio=bio, subjects=subjects, rating=rev, pending=pending, connect=connect)
                                 onUserFetched(user2)
                             } else {
                                 Log.w("fetchUserDetails", "No such document")
@@ -198,6 +206,13 @@ class MainViewModel : ViewModel() {
             .addOnFailureListener { exception ->
                 Log.e("MainViewModel", "Error fetching users: ", exception)
             }
+    }
+
+    fun getRating(num:String, num2:String): String{
+        val num3 = num.toFloat()
+        val num4 = num2.toFloat()
+        if (num4.toInt() == 0) return "No ratings yet."
+        else return (round(num3*10/num4) /10).toString()
     }
 
     fun onUserFetched(user2: User){

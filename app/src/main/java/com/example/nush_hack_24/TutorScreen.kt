@@ -3,118 +3,188 @@ package com.example.nush_hack_24
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.math.round
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TutorScreen(
     vm: MainViewModel = viewModel()
-){
+) {
     val scrollState = rememberScrollState()
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .padding(16.dp)
-            .verticalScroll(scrollState),
 
-        ) {
-        Text(
-            "Logged in as: ${vm.userEmail} (TUTOR)",
-            style = MaterialTheme.typography.headlineLarge
+    // State variables to hold the data
+    var name by remember { mutableStateOf("") }
+    var age by remember { mutableStateOf("") }
+    var bio by remember { mutableStateOf("") }
+    var rev by remember { mutableStateOf("") }
+    var subject by remember { mutableStateOf("") }
+
+    val subjects2 = remember { mutableStateListOf<String>() }
+
+    // Fetch user data from Firestore
+    vm.db.collection("users").document(vm.userUid).get()
+        .addOnSuccessListener { document ->
+            name = document.get("name").toString()
+            age = document.get("age").toString()
+            bio = document.get("bio").toString()
+            val num = document.get("rating")?.toString() ?: "0"
+            val num2 = document.get("reviews")?.toString() ?: "0"
+            val num3 = num.toFloat()
+            val num4 = num2.toFloat()
+            rev = if (num4.toInt() == 0) "No ratings yet." else (round(num3 * 10 / num4) / 10).toString()
+
+            val subjects = document.get("subjects") as? List<*>
+            subjects2.clear()
+            subjects?.forEach {
+                subjects2.add(it.toString())
+            }
+            subject = subjects?.joinToString(", ") ?: "No subjects available"
+
+            // Update VM with the data
+            vm.userName = name
+            vm.userAge = age
+            vm.userBio = bio
+            vm.selectedSubjects = subjects2
+        }
+        .addOnFailureListener { exception ->
+            Log.w("DocumentFields", "Error getting document: ", exception)
+        }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // TopAppBar with a logout icon at the left
+        TopAppBar(
+            title = { Text("Tutor Profile") },
+            navigationIcon = {
+                IconButton(onClick = { vm.logoutUser { vm.isUserLoggedIn = false } }) {
+                    Icon(
+                        imageVector = Icons.Filled.ExitToApp,
+                        contentDescription = "Logout"
+                    )
+                }
+            }
         )
 
-        // State variables to hold the data
-        var name by remember { mutableStateOf("") }
-        var age by remember { mutableStateOf("") }
-        var bio by remember { mutableStateOf("") }
-        var rev by remember { mutableStateOf("") }
-
-        val subjects2: SnapshotStateList<String> = remember { mutableStateListOf() }
-
-        var subject by remember { mutableStateOf("") }
-
-        Log.d("die", vm.userUid)
-
-        vm.db.collection("users").document(vm.userUid).get()
-            .addOnSuccessListener { document ->
-                name = document.get("name").toString()
-                age = document.get("age").toString()
-                bio = document.get("bio").toString()
-                val num = document.get("rating")?.toString() ?: "0"
-                val num2 = document.get("reviews")?.toString() ?: "0"
-                val num3 = num.toFloat()
-                val num4 = num2.toFloat()
-                if (num4.toInt() == 0) rev = "No ratings yet."
-                else rev = (round(num3*10/num4)/10).toString()
-                val subjects = document.get("subjects") as? List<*>
-                subjects2.clear()
-                if (subjects != null) {
-                    for (item in subjects){
-                        subjects2.add(item.toString())
-                    }
-                }
-                vm.userName = name
-                vm.userAge = age
-                vm.userBio = bio
-                vm.selectedSubjects = subjects2
-                subject = subjects?.joinToString(", ") ?: "No subjects available"
-            }
-            .addOnFailureListener { exception ->
-                Log.w("DocumentFields", "Error getting document: ", exception)
-            }
-
-// Display Profile Data
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Name: $name")
-        Text("Age: $age")
-        Text("Bio: $bio")
-        Text("Rating: $rev")
-        Text("Subjects: $subject")
-
-
-        Spacer(modifier = Modifier.height(24.dp))
-        AnimatedVisibility(
-            visible = !vm.isEditProfile
+        // Scrollable content
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(16.dp)
+                .verticalScroll(scrollState)
         ) {
-            Button(
-                onClick = { vm.isEditProfile = true },
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                "${vm.userName} ",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            // Display Profile Data
+            Text("Age: $age")
+            Text("Bio: $bio")
+
+            // Rating and star representation
+            RatingWithStars(rating = rev)
+
+            Text("Subjects: $subject")
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            AnimatedVisibility(
+                visible = !vm.isEditProfile
             ) {
-                Text("Edit Profile")
+                Button(
+                    onClick = { vm.isEditProfile = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Edit Profile")
+                }
             }
-        }
-        AnimatedVisibility(
-            visible = vm.isEditProfile
-        ) {
-            EditPage(subject = true)
-        }
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Logout Button
-        Button(
-            onClick = { vm.logoutUser { vm.isUserLoggedIn = false } },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Logout")
+            AnimatedVisibility(
+                visible = vm.isEditProfile
+            ) {
+                EditPage(subject = true)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+fun RatingWithStars(rating: String) {
+    val ratingValue = rating.toFloatOrNull() ?: 0f
+    val fullStars = ratingValue.toInt()
+    val hasHalfStar = (ratingValue - fullStars) >= 0.5f
+    val emptyStars = 5 - fullStars - if (hasHalfStar) 1 else 0
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Display filled stars
+        repeat(fullStars) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Full Star",
+                modifier = Modifier.padding(2.dp)
+            )
+        }
+
+        // Display half star (if any)
+        if (hasHalfStar) {
+            Icon(
+                imageVector = Icons.Filled.StarBorder, // No half star icon in material, using border as placeholder
+                contentDescription = "Half Star",
+                modifier = Modifier.padding(2.dp)
+            )
+        }
+
+        // Display empty stars
+        repeat(emptyStars) {
+            Icon(
+                imageVector = Icons.Filled.StarBorder,
+                contentDescription = "Empty Star",
+                modifier = Modifier.padding(2.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp)) // Space between stars and rating text
+
+        // Display the numeric rating
+        Text(
+            text = "($rating)",
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }

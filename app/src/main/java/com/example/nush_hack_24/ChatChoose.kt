@@ -3,17 +3,14 @@ package com.example.nush_hack_24
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.ListItem
 import androidx.compose.material.Text
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,15 +65,6 @@ fun ChatChoose(
                 senderId = currentUserId,
                 receiverId = selectedChatInfo!!.second
             ) { selectedChatInfo = null }
-        }
-
-        // Logout button
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = { vm.logoutUser { vm.isUserLoggedIn = false } },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Logout")
         }
     }
 }

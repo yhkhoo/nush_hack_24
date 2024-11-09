@@ -57,7 +57,6 @@ fun TutorPage(
 
 // Display Profile Data
     Spacer(modifier = Modifier.height(16.dp))
-    Text("Name: $name")
     Text("Age: $age")
     Text("Bio: $bio")
     Text("Subjects: $subject")
