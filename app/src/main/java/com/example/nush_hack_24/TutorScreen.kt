@@ -144,20 +144,7 @@ fun AboutScreen2(
         }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // TopAppBar with a logout icon at the left
-        TopAppBar(
-            title = { Text("Tutor Profile") },
-            navigationIcon = {
-                IconButton(onClick = { vm.logoutUser { vm.isUserLoggedIn = false } }) {
-                    Icon(
-                        imageVector = Icons.Filled.ExitToApp,
-                        contentDescription = "Logout"
-                    )
-                }
-            }
-        )
 
-        // Scrollable content
         Column(
             modifier = Modifier
                 .fillMaxHeight()
