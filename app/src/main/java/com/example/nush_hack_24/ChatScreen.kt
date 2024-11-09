@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -71,50 +73,63 @@ fun ChatScreen(chatId: String, senderId: String, receiverId: String, onBack: () 
         // Show TutorPage when the state is true
         TutorPage(receiverId = receiverId)
     } else {
-        // Show ChatScreen when the state is false
-        Column {
-            // Chat header with back button and the receiver's name
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Column for chat screen content
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Chat header with back button and the receiver's name
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.padding(end = 20.dp, bottom = 25.dp))
+                    }
+
+                    Text(
+                        text = "Chat with $receiverName", // Display receiver's name here
+                        style = MaterialTheme.typography.h6,
+                        modifier = Modifier
+                            .clickable {
+                                // Trigger the state change to show TutorPage when clicked
+                                showTutorPage = true
+                            }
+                    )
                 }
 
-                Text(
-                    text = "Chat with $receiverName", // Display receiver's name here
-                    style = MaterialTheme.typography.h6,
+                // Messages list with scrollable area
+                LazyColumn(
                     modifier = Modifier
-                        .clickable {
-                            // Trigger the state change to show TutorPage when clicked
-                            showTutorPage = true
-                        }
-                )
-            }
-
-            // Messages list
-            LazyColumn() {
-                items(messages) { message ->
-                    MessageBubble(message, isSender = message.senderId == senderId)
+                        .weight(1f) // Take up remaining space
+                        .padding(8.dp) // Padding around the messages
+                ) {
+                    items(messages) { message ->
+                        MessageBubble(message, isSender = message.senderId == senderId)
+                    }
                 }
             }
 
-            // Message input field and send button
-            Row(modifier = Modifier.padding(8.dp)) {
+            // Message input field and send button at the bottom of the screen
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .align(Alignment.BottomCenter) // Align at the bottom of the screen
+            ) {
                 TextField(
                     value = text,
                     onValueChange = { text = it },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f) // TextField takes up most of the space
+                        .padding(end = 8.dp), // Add some space between text field and button
                     placeholder = { Text("Type a message...") }
                 )
                 IconButton(onClick = {
                     val time = System.currentTimeMillis()
                     if (text.isNotBlank()) {
                         ChatRepository.sendMessage(chatId, senderId, text, time)
-                        text = ""
+                        text = "" // Clear text field after sending
                     }
                 }) {
                     Icon(Icons.Default.Send, contentDescription = "Send")

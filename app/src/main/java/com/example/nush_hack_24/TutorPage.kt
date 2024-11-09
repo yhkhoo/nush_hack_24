@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,17 +57,21 @@ fun TutorPage(
             Log.w("DocumentFields", "Error getting document: ", exception)
         }
 
-// Display Profile Data
+    // Display Profile Data
     Spacer(modifier = Modifier.height(16.dp))
     Text("Age: $age")
     Text("Bio: $bio")
     Text("Subjects: $subject")
 
-
     Spacer(modifier = Modifier.height(24.dp))
 
     // Leave a review button
     LeaveReviewButton(tutorId = receiverId)
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    // Report Tutor button
+    ReportTutorButton(tutorId = receiverId)
 
     Spacer(modifier = Modifier.height(16.dp))
 }
@@ -197,5 +203,136 @@ fun saveReviewToFirebase(tutorId: String, rating: Int, reviewText: String) {
         }
         .addOnFailureListener { e ->
             Log.w("Review", "Error saving review", e)
+        }
+}
+
+@Composable
+fun ReportTutorButton(tutorId: String) {
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedIssue by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf(TextFieldValue("")) }
+
+    // List of common issues to report
+    val issues = listOf(
+        "Unprofessional behavior",
+        "Poor communication",
+        "Inadequate subject knowledge",
+        "Unreliable",
+        "Other"
+    )
+
+    // Button to show report dialog
+    Button(
+        onClick = { showDialog = true },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Report Tutor")
+    }
+
+    // Show dialog when button is clicked
+    if (showDialog) {
+        ReportDialog(
+            issues = issues,
+            selectedIssue = selectedIssue,
+            onIssueSelected = { selectedIssue = it },
+            description = description,
+            onDescriptionChange = { description = it },
+            onDismiss = { showDialog = false },
+            onSubmit = {
+                // Handle report submission logic here (e.g., save to Firebase)
+                sendReportToSystem(tutorId, selectedIssue, description.text)
+                showDialog = false // Close dialog after submitting
+            }
+        )
+    }
+}
+
+@Composable
+fun ReportDialog(
+    issues: List<String>,
+    selectedIssue: String,
+    onIssueSelected: (String) -> Unit,
+    description: TextFieldValue,
+    onDescriptionChange: (TextFieldValue) -> Unit,
+    onDismiss: () -> Unit,
+    onSubmit: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = { onDismiss() },
+        title = { Text("Report Tutor") },
+        text = {
+            Column {
+                // Dropdown for selecting an issue
+                Text("Select an Issue:")
+                // Button to toggle the dropdown visibility
+                Button(onClick = { expanded = !expanded }) {
+                    Text(if (selectedIssue.isEmpty()) "Select an Issue" else selectedIssue)
+                }
+
+                // Dropdown Menu
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    issues.forEach { issue ->
+                        DropdownMenuItem(
+                            onClick = {
+                                onIssueSelected(issue) // Set the selected issue
+                                expanded = false // Close the dropdown
+                            }
+                        ) {
+                            Text(issue)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Description section
+                Text("Description:")
+                BasicTextField(
+                    value = description,
+                    onValueChange = onDescriptionChange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 60.dp)
+                        .background(Color.Gray.copy(alpha = 0.1f)),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onSubmit) {
+                Text("Send to System")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+fun sendReportToSystem(tutorId: String, issue: String, description: String) {
+    val db = FirebaseFirestore.getInstance()
+
+    // Create the report data
+    val reportData = hashMapOf(
+        "issue" to issue,
+        "description" to description,
+        "timestamp" to System.currentTimeMillis()
+    )
+
+    // Save the report to the tutor's "reports" collection in Firestore
+    db.collection("users").document(tutorId).collection("reports")
+        .add(reportData)
+        .addOnSuccessListener {
+            Log.d("Report", "Report sent successfully!")
+        }
+        .addOnFailureListener { e ->
+            Log.w("Report", "Error sending report", e)
         }
 }

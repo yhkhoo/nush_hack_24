@@ -18,6 +18,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun LoginPage(vm: MainViewModel = viewModel()) {
+    val context = LocalContext.current
     // Wrap the content in a Box to center it
     Box(
         modifier = Modifier
@@ -147,7 +149,7 @@ fun LoginPage(vm: MainViewModel = viewModel()) {
                 // Login Button
                 Button(
                     onClick = {
-                        vm.loginUser(vm.email, vm.password) { success ->
+                        vm.loginUser(vm.email, vm.password, context = context) { success ->
                             if (success) {
                                 vm.isUserLoggedIn = true
                                 // Fetch the user's email and role from Firestore after login

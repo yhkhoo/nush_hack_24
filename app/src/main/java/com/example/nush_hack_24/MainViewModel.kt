@@ -1,6 +1,8 @@
 package com.example.nush_hack_24
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -12,7 +14,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.math.round
 
 class MainViewModel : ViewModel() {
-    val subjects = listOf<String>("English", "Chinese", "Tamil", "Hindi", "Biology", "Chemistry", "Physics", "Math", "Geography", "Literature", "Social Studies", "History")
+    val subjects = listOf("English", "Chinese", "Tamil", "Hindi", "Biology", "Chemistry", "Physics", "Math", "Geography", "Literature", "Social Studies", "History")
 
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
     val db: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -54,12 +56,18 @@ class MainViewModel : ViewModel() {
     }
 
     // Function to login the user
-    fun loginUser(email: String, password: String, callback: (Boolean) -> Unit) {
+    fun loginUser(email: String, password: String, context: Context, callback: (Boolean) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                val user = FirebaseAuth.getInstance().currentUser
-                userUid = user?.uid ?: "" // Set UID
-                callback(task.isSuccessful)
+                if (task.isSuccessful) {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    userUid = user?.uid ?: "" // Set UID
+                    callback(true)
+                } else {
+                    // Show a toast message if login fails
+                    Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT).show()
+                    callback(false)
+                }
             }
     }
 
@@ -74,7 +82,7 @@ class MainViewModel : ViewModel() {
                     val userData = hashMapOf(
                         "email" to email,
                         "role" to role, // Save the role as part of the user's data
-                        "age" to birth,
+                        "age" to userAge,
                         "name" to userName
                     )
 
@@ -122,7 +130,7 @@ class MainViewModel : ViewModel() {
                     userName = document.getString("name") ?: "Unknown"
                     userBio = document.getString("bio") ?: "No bio"
                     userAge = document.getString("age") ?: ""
-                    selectedSubjects = (document.get("subjects") as? SnapshotStateList<String>) ?: mutableStateListOf<String>()
+                    selectedSubjects = (document.get("subjects") as? SnapshotStateList<String>) ?: mutableStateListOf()
                 }
                 .addOnFailureListener {
                     statusMessage = "Error fetching profile"
@@ -161,26 +169,22 @@ class MainViewModel : ViewModel() {
         auth.signOut()
         callback() // Reset state for logout
     }
+
     val userList: SnapshotStateList<User> = mutableStateListOf()
 
     // Function to fetch all users from Firestore and populate the userList
     fun fetchUserList(currentUserId: String) {
-        //Log.w("A","A")
         db.collection("users")
             .get()
             .addOnSuccessListener { result ->
                 userList.clear()
-                for (user in result){
+                for (user in result) {
                     Log.d("UserList", "User: ${user.id}")
-
-
-
                     db.collection("users")
                         .document(user.id)
                         .get()
                         .addOnSuccessListener { document ->
                             if (document.exists()) {
-                                // Access multiple fields
                                 val email = document.getString("email") ?: "Unknown"
                                 val age = document.getString("age") ?: "0"
                                 val name = document.getString("name") ?: "Unknown"
@@ -194,13 +198,23 @@ class MainViewModel : ViewModel() {
                                 val rev = getRating(num, num2)
                                 Log.wtf("jover", subjects.toString())
 
-                                val user2  = User(uid = user.id, email = email, age=age, name=name, role=role, bio=bio, subjects=subjects, rating=rev, pending=pending, connect=connect)
+                                val user2 = User(
+                                    uid = user.id,
+                                    email = email,
+                                    age = age,
+                                    name = name,
+                                    role = role,
+                                    bio = bio,
+                                    subjects = subjects,
+                                    rating = rev,
+                                    pending = pending,
+                                    connect = connect
+                                )
                                 onUserFetched(user2)
                             } else {
                                 Log.w("fetchUserDetails", "No such document")
                             }
                         }
-
                 }
             }
             .addOnFailureListener { exception ->
@@ -208,22 +222,21 @@ class MainViewModel : ViewModel() {
             }
     }
 
-    fun getRating(num:String, num2:String): String{
+    fun getRating(num: String, num2: String): String {
         val num3 = num.toFloat()
         val num4 = num2.toFloat()
-        if (num4.toInt() == 0) return "No ratings yet."
-        else return (round(num3*10/num4) /10).toString()
+        return if (num4.toInt() == 0) "No ratings yet." else (round(num3 * 10 / num4) / 10).toString()
     }
 
-    fun onUserFetched(user2: User){
+    fun onUserFetched(user2: User) {
         userList.add(user2)
     }
 
-    fun searchTutors(subject: String){
+    fun searchTutors(subject: String) {
         foundTutors.clear()
         fetchUserList(auth.currentUser!!.uid)
         userList.forEach { user ->
-            if(user.role == "Tutor" && subject in user.subjects){
+            if (user.role == "Tutor" && subject in user.subjects) {
                 foundTutors.add(user)
             }
         }

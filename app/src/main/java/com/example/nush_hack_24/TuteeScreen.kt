@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
@@ -52,7 +55,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
-
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun TuteeScreen(
@@ -245,7 +247,7 @@ fun AboutScreen(vm: MainViewModel) {
                 ) {
                     Column(modifier = Modifier.padding(4.dp)) {
                         Text(user.name, style = MaterialTheme.typography.titleMedium)
-                        Text("Rating: ${user.rating}")
+                        rateStars(user.rating)
                     }
                 }
             }
@@ -269,11 +271,15 @@ fun TutorDialog(user: User, onDismissRequest: () -> Unit, onHireClick: () -> Uni
     var selectedTab by remember { mutableStateOf(0) }
     val tabTitles = listOf("Details", "Reviews")
     var isPending by remember { mutableStateOf(false) }
+    var isConnect by remember { mutableStateOf(false) }
 
     // Call checkPending when the dialog opens
     LaunchedEffect(user.uid) {
         checkPending(user) { pending ->
             isPending = pending
+        }
+        checkConnect(user) { connect ->
+            isConnect = connect
         }
     }
 
@@ -325,6 +331,15 @@ fun TutorDialog(user: User, onDismissRequest: () -> Unit, onHireClick: () -> Uni
                         Log.d("checkPending", "User is not pending")
                     }
                 }
+                checkConnect(user) { isConnect ->
+                    if (isConnect) {
+                        // Handle the case where the current user is in the pending list
+                        Log.d("checkPending", "User is pending")
+                    } else {
+                        // Handle the case where the current user is not in the pending list
+                        Log.d("checkPending", "User is not pending")
+                    }
+                }
 
 
                 // Tab Content
@@ -332,6 +347,7 @@ fun TutorDialog(user: User, onDismissRequest: () -> Unit, onHireClick: () -> Uni
                     0 -> { // Details Tab
                         Column {
                             Text("Name: ${user.name}")
+                            Text("Age: ${user.age}")
                             Text("Bio: ${user.bio}")
                             Text("Subjects: ${user.subjects.joinToString(", ")}")
                             Spacer(modifier = Modifier.height(24.dp))
@@ -342,6 +358,14 @@ fun TutorDialog(user: User, onDismissRequest: () -> Unit, onHireClick: () -> Uni
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                 ) {
                                     Text("Pending Request")
+                                }
+                            } else if (isConnect) {
+                                Button(
+                                    onClick = { onDismissRequest() },
+                                    enabled = false,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Hired")
                                 }
                             } else {
                                 Button(
@@ -362,15 +386,24 @@ fun TutorDialog(user: User, onDismissRequest: () -> Unit, onHireClick: () -> Uni
                                     Text("Hire")
                                 }
                             }
-
                         }
                     }
                     1 -> { // Reviews Tab
                         Column {
-                            reviews.forEach { review ->
-                                Text("Rating: ${review.rating}")
-                                Text("Comment: ${review.reviewText}")
-                                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                            // Check if there are reviews
+                            if (reviews.isEmpty()) {
+                                Text(
+                                    text = "No reviews yet",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            } else {
+                                // Display reviews if there are any
+                                reviews.forEach { review ->
+                                    Text("Rating: ${review.rating}")
+                                    Text("Comment: ${review.reviewText}")
+                                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                                }
                             }
                         }
                     }
@@ -403,6 +436,28 @@ fun checkPending(user: User, onResult: (Boolean) -> Unit) {
         }
 }
 
+fun checkConnect(user: User, onResult: (Boolean) -> Unit) {
+    val db = FirebaseFirestore.getInstance()
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    db.collection("users")
+        .document(user.uid)
+        .get()
+        .addOnSuccessListener { document ->
+            if (document.exists()) {
+                // Access multiple fields
+                val connect = (document.get("connect") as? List<String>) ?: listOf()
+                onResult(currentUserId in connect)
+            } else {
+                Log.w("checkConnect", "No such document")
+                onResult(false) // Return false if no document exists
+            }
+        }
+        .addOnFailureListener { exception ->
+            Log.w("checkConnect", "Error fetching document", exception)
+            onResult(false) // Return false if there was an error
+        }
+}
 
 // Function to handle the "Hire" action
 fun hireTutor(tutorId: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
@@ -425,5 +480,49 @@ fun hireTutor(tutorId: String, onSuccess: () -> Unit, onFailure: (Exception) -> 
         }.addOnFailureListener { exception ->
             onFailure(exception)
         }
+    }
+}
+@Composable
+fun rateStars(rating: String) {
+    val ratingValue = rating.toFloatOrNull() ?: 0f
+    val fullStars = ratingValue.toInt()
+    val hasHalfStar = (ratingValue - fullStars) >= 0.5f
+    val emptyStars = 5 - fullStars - if (hasHalfStar) 1 else 0
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Display filled stars
+        repeat(fullStars) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Full Star",
+                modifier = Modifier.padding(2.dp)
+            )
+        }
+
+        // Display half star (if any)
+        if (hasHalfStar) {
+            Icon(
+                imageVector = Icons.Filled.StarBorder, // No half star icon in material, using border as placeholder
+                contentDescription = "Half Star",
+                modifier = Modifier.padding(2.dp)
+            )
+        }
+
+        // Display empty stars
+        repeat(emptyStars) {
+            Icon(
+                imageVector = Icons.Filled.StarBorder,
+                contentDescription = "Empty Star",
+                modifier = Modifier.padding(2.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp)) // Space between stars and rating text
+
+        // Display the numeric rating
+        Text(
+            text = "($rating)",
+            style = MaterialTheme.typography.bodyMedium
+        )
     }
 }
