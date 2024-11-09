@@ -2,6 +2,7 @@ package com.example.nush_hack_24
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,8 +34,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 
 @Composable
-fun ChatScreen(chatId: String, senderId: String, receiverName: String, onBack: () -> Unit) {
+fun ChatScreen(chatId: String, senderId: String, receiverId: String, onBack: () -> Unit) {
     val db = FirebaseFirestore.getInstance()
+
+    var showTutorPage by remember { mutableStateOf(false)}
 
     // Get the reference to the "users" collection and order by "timestamp" field
     db.collection("chats").document(chatId).collection("messages")
@@ -61,24 +64,38 @@ fun ChatScreen(chatId: String, senderId: String, receiverName: String, onBack: (
 
     var text by remember { mutableStateOf("") }
 
-    Column {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+
+
+    if (showTutorPage) {
+        // Show TutorPage when the state is true
+        TutorPage(receiverId = receiverId)
+    } else {
+        // Show ChatScreen when the state is false
+        Column {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+
+                Text(
+                    text = "Chat with $receiverId",
+                    style = MaterialTheme.typography.h6,
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .clickable {
+                            // Trigger the state change to show TutorPage when clicked
+                            showTutorPage = true
+                        }
+                )
             }
-            Text(
-                text = "Chat with $receiverName",
-                style = MaterialTheme.typography.h6,
-                modifier = Modifier.padding(start = 16.dp)
-            )
         }
 
-        LazyColumn(modifier = Modifier.weight(1f)) {
+        LazyColumn() {
             items(messages) { message ->
                 MessageBubble(message, isSender = message.senderId == senderId)
             }

@@ -184,7 +184,7 @@ fun AboutScreen(vm: MainViewModel) {
         Column() {
             vm.foundTutors.forEach { user ->
                 Card(
-                    modifier = Modifier.padding(4.dp)
+                    modifier = Modifier.padding(4.dp).fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(4.dp)){
                         Text(user.name, style = MaterialTheme.typography.titleMedium)

@@ -55,7 +55,7 @@ fun ChatChoose(
                             modifier = Modifier.clickable {
                                 // Directly set selectedChatId to open ChatScreen
                                 Log.d("kys",user.uid)
-                                selectedChatInfo = ChatRepository.getOrCreateChatId(currentUserId,user.uid) to user.email
+                                selectedChatInfo = ChatRepository.getOrCreateChatId(currentUserId,user.uid) to user.uid
                             }
                         )
                     }
@@ -66,7 +66,7 @@ fun ChatChoose(
             ChatScreen(
                 chatId = selectedChatInfo!!.first,
                 senderId = currentUserId,
-                receiverName = selectedChatInfo!!.second
+                receiverId = selectedChatInfo!!.second
             ) { selectedChatInfo = null }
         }
 
