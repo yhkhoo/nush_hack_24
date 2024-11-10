@@ -10,7 +10,7 @@ The database stopped working halfway through our development
 We have successfully created an application with numerous features.
 ## What we learned
 How to use the Google FIrebase API with the jetpack compose framework.
-## What's next for tutr
+## What's next for tuitr
 The platform can be expanded to more areas such as leadership and soft skills.
 After enough usage and testing for students, this can expand for adults to teach and learn professional skills.
 Peer-to-peer tutoring does not stop at academics.
